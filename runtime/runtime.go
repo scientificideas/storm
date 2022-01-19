@@ -13,4 +13,5 @@ type Runtime interface {
 	RmContainer(ctx context.Context, name string) error
 	StartContainer(ctx context.Context, name string) error
 	Chaos() chaos.Chaos
+	Type() string
 }
