@@ -5,7 +5,10 @@ import (
 	"flag"
 	"github.com/scientificideas/storm/runtime"
 	"github.com/scientificideas/storm/runtime/docker"
+	"github.com/scientificideas/storm/runtime/k8s"
 	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/util/homedir"
+	"path/filepath"
 )
 
 func main() {
@@ -14,6 +17,17 @@ func main() {
 	targets := flag.String("targets", "", `if you only want to expose certain containers, list them here ("container1,container2,container3")`)
 	startfast := flag.Bool("startfast", false, `start stopped containers immediately ("true" or "false")`)
 	runtimeType := flag.String("runtime", "k8s", "which orchestrator to interact with")
+	namespace := flag.String("kube-namespace", "", "k8s namespace")
+	k8sContext := flag.String("kube-context", "", "k8s context")
+
+	var kubeconfig *string
+	if home := homedir.HomeDir(); home != "" {
+		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	} else {
+		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	}
+	flag.Parse()
+
 	flag.Parse()
 
 	var r runtime.Runtime
@@ -29,6 +43,12 @@ func main() {
 			logrus.Fatal(err)
 		}
 		r = docker
+	case "k8s":
+		k8sClient, err := k8s.NewK8sClient(*chaos, *filter, *namespace, *kubeconfig, *k8sContext)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		r = k8sClient
 	}
 
 	stopped := make(map[int]struct{})
