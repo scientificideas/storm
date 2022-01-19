@@ -23,7 +23,7 @@ func GetConfig() *Config {
 	chaos := flag.String("chaos", "medium", "easy, medium or hard level of chaos")
 	targets := flag.String("targets", "", `if you only want to expose certain containers, list them here ("container1,container2,container3")`)
 	startfast := flag.Bool("startfast", false, `start stopped containers immediately ("true" or "false")`)
-	runtimeType := flag.String("runtime", "k8s", "which orchestrator to interact with")
+	runtimeType := flag.String("runtime", "k8s", "which orchestrator to interact with ('docker' or 'k8s')")
 	namespace := flag.String("kube-namespace", "", "k8s namespace")
 	k8sContext := flag.String("kube-context", "", "k8s context")
 
