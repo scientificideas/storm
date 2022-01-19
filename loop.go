@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/scientificideas/storm/chaos"
 	"github.com/scientificideas/storm/runtime"
 	"github.com/sirupsen/logrus"
 	"math/rand"
@@ -14,9 +13,16 @@ const (
 	stop = iota
 	start
 	stopAndStartImmediately
+	undefined
 )
 
-func Loop(ctx context.Context, runtime runtime.Runtime, loop chaos.LoopType, stopped map[int]struct{}, targets string) {
+type LoopType int
+
+func Loop(ctx context.Context, runtime runtime.Runtime, loop LoopType, stopped map[int]struct{}, targets string) {
+	if runtime.Type() == "k8s" {
+		loop = undefined
+	}
+
 	var (
 		msg              string
 		actionFn         func(ctx context.Context, name string) error
@@ -34,6 +40,9 @@ func Loop(ctx context.Context, runtime runtime.Runtime, loop chaos.LoopType, sto
 	case loop == start:
 		msg = "start"
 		actionFn = runtime.StartContainer
+	default:
+		msg = "delete"
+		actionFn = runtime.RmContainer
 	}
 
 	var targetIndex int
@@ -47,7 +56,7 @@ func Loop(ctx context.Context, runtime runtime.Runtime, loop chaos.LoopType, sto
 		}
 
 		switch {
-		case loop == stop || loop == stopAndStartImmediately:
+		case loop == stop || loop == stopAndStartImmediately || loop == undefined:
 			if len(containers) == 0 {
 				continue
 			}
@@ -96,6 +105,8 @@ func Loop(ctx context.Context, runtime runtime.Runtime, loop chaos.LoopType, sto
 			if err = runtime.StartContainer(ctx, selectedContainer); err != nil {
 				logrus.Error(err)
 			}
+		default:
+
 		}
 	}
 }

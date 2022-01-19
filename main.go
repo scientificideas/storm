@@ -35,7 +35,7 @@ func main() {
 
 	// stop containers loop
 	ctx := context.Background()
-	if *startfast {
+	if *startfast || *runtimeType == "k8s" {
 		go Loop(ctx, r, stopAndStartImmediately, stopped, *targets)
 	} else {
 		go Loop(ctx, r, stop, stopped, *targets)
