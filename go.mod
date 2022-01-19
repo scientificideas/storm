@@ -12,5 +12,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	google.golang.org/grpc v1.40.0 // indirect
+	k8s.io/api v0.20.6
+	k8s.io/apimachinery v0.20.6
 	k8s.io/client-go v0.20.6
 )
