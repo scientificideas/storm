@@ -26,8 +26,6 @@ const (
 	maxTimeoutMillisecsHard   = 3000
 )
 
-type LoopType int
-
 type Chaos interface {
 	Timeout() time.Duration
 }
