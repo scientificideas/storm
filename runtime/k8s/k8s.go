@@ -2,8 +2,8 @@ package k8s
 
 import (
 	"context"
+	"errors"
 	"flag"
-	"github.com/docker/docker/api/types"
 	"github.com/scientificideas/storm/chaos"
 	"github.com/scientificideas/storm/container"
 	"github.com/scientificideas/storm/container/k8s"
@@ -13,24 +13,16 @@ import (
 	"k8s.io/client-go/util/homedir"
 	"math/rand"
 	"path/filepath"
-	"time"
 )
 
 type K8S struct {
-	cli    *kubernetes.Clientset
-	chaos  chaos.Chaos
-	filter string
+	cli       *kubernetes.Clientset
+	chaos     chaos.Chaos
+	filter    string
+	namespace string
 }
 
-type loopType int
-
-const (
-	stop = iota
-	start
-	stopAndStartImmediately
-)
-
-func NewK8sClient(chaosType, filter string) (*K8S, error) {
+func NewK8sClient(chaosType, filter, namespace string) (*K8S, error) {
 	var kubeconfig *string
 	if home := homedir.HomeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
@@ -50,7 +42,11 @@ func NewK8sClient(chaosType, filter string) (*K8S, error) {
 	if err != nil {
 		panic(err.Error())
 	}
-	return &K8S{cli: clientset, chaos: chaos.NewChaos(chaosType), filter: filter}, nil
+	return &K8S{cli: clientset, chaos: chaos.NewChaos(chaosType), filter: filter, namespace: namespace}, nil
+}
+
+func (k *K8S) Type() string {
+	return "k8s"
 }
 
 func (k *K8S) Chaos() chaos.Chaos {
@@ -75,12 +71,14 @@ func (k *K8S) GetContainers(ctx context.Context, all bool) ([]container.Containe
 }
 
 func (k *K8S) StopContainer(ctx context.Context, name string) error {
-	stopTime := 1 * time.Millisecond
-	return d.cli.ContainerStop(ctx, name, &stopTime)
+	return errors.New("stop doesn't not implemented for k8s")
 }
 func (k *K8S) RmContainer(ctx context.Context, name string) error {
-	return d.cli.ContainerKill(ctx, name, "SIGKILL")
+	var stopTime int64 = 3
+	return k.cli.CoreV1().Pods("").Delete(context.TODO(), name, metav1.DeleteOptions{
+		GracePeriodSeconds: &stopTime,
+	})
 }
 func (k *K8S) StartContainer(ctx context.Context, name string) error {
-	return d.cli.ContainerStart(ctx, name, types.ContainerStartOptions{})
+	return nil
 }

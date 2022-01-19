@@ -27,6 +27,10 @@ func NewDockerClient(chaosType, filter string) (*Docker, error) {
 	return &Docker{cli, chaos.NewChaos(chaosType), filter}, nil
 }
 
+func (d *Docker) Type() string {
+	return "docker"
+}
+
 func (d *Docker) Chaos() chaos.Chaos {
 	return d.chaos
 }
