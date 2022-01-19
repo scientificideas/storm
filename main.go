@@ -2,38 +2,20 @@ package main
 
 import (
 	"context"
-	"flag"
+	"github.com/scientificideas/storm/config"
 	"github.com/scientificideas/storm/runtime"
 	"github.com/scientificideas/storm/runtime/docker"
 	"github.com/scientificideas/storm/runtime/k8s"
 	"github.com/sirupsen/logrus"
-	"k8s.io/client-go/util/homedir"
-	"path/filepath"
 )
 
 func main() {
-	filter := flag.String("filter", "", "filter containers by name")
-	chaos := flag.String("chaos", "medium", "easy, medium or hard level of chaos")
-	targets := flag.String("targets", "", `if you only want to expose certain containers, list them here ("container1,container2,container3")`)
-	startfast := flag.Bool("startfast", false, `start stopped containers immediately ("true" or "false")`)
-	runtimeType := flag.String("runtime", "k8s", "which orchestrator to interact with")
-	namespace := flag.String("kube-namespace", "", "k8s namespace")
-	k8sContext := flag.String("kube-context", "", "k8s context")
-
-	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
-
-	flag.Parse()
+	configuration := config.GetConfig()
 
 	var r runtime.Runtime
-	switch *runtimeType {
+	switch configuration.RuntimeType {
 	case "docker":
-		docker, err := docker.NewDockerClient(*chaos, *filter)
+		docker, err := docker.NewDockerClient(configuration.Chaos, configuration.Filter)
 		if err != nil {
 			logrus.Fatal(err)
 		}
@@ -44,7 +26,7 @@ func main() {
 		}
 		r = docker
 	case "k8s":
-		k8sClient, err := k8s.NewK8sClient(*chaos, *filter, *namespace, *kubeconfig, *k8sContext)
+		k8sClient, err := k8s.NewK8sClient(configuration.Chaos, configuration.Filter, configuration.Namespace, configuration.Kubeconfig, configuration.K8sContext)
 		if err != nil {
 			logrus.Fatal(err)
 		}
@@ -55,12 +37,12 @@ func main() {
 
 	// stop containers loop
 	ctx := context.Background()
-	if *startfast || *runtimeType == "k8s" {
-		go Loop(ctx, r, stopAndStartImmediately, stopped, *targets)
+	if configuration.Startfast || configuration.RuntimeType == "k8s" {
+		go Loop(ctx, r, stopAndStartImmediately, stopped, configuration.Targets)
 	} else {
-		go Loop(ctx, r, stop, stopped, *targets)
+		go Loop(ctx, r, stop, stopped, configuration.Targets)
 		// start containers loop
-		go Loop(ctx, r, start, stopped, *targets)
+		go Loop(ctx, r, start, stopped, configuration.Targets)
 	}
 	ch := make(chan struct{})
 	<-ch
