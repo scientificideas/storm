@@ -41,7 +41,7 @@ func Loop(ctx context.Context, runtime runtime.Runtime, loop LoopType, stopped m
 		msg = "start"
 		actionFn = runtime.StartContainer
 	default:
-		msg = "delete"
+		msg = "delete pod"
 		actionFn = runtime.RmContainer
 	}
 
