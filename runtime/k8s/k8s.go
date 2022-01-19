@@ -6,12 +6,14 @@ import (
 	"github.com/scientificideas/storm/chaos"
 	"github.com/scientificideas/storm/container"
 	"github.com/scientificideas/storm/container/k8s"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"math/rand"
+	"strings"
 )
 
 type K8S struct {
@@ -53,12 +55,23 @@ func (k *K8S) GetContainers(ctx context.Context, all bool) ([]container.Containe
 		panic(err.Error())
 	}
 
-	rand.Shuffle(len(pods.Items), func(i, j int) {
-		pods.Items[i], pods.Items[j] = pods.Items[j], pods.Items[i]
+	var items []v1.Pod
+	if k.filter != "" {
+		filterPatterns := strings.Split(k.filter, ",")
+		for _, filterPattern := range filterPatterns {
+			for _, pod := range pods.Items {
+				if strings.Contains(pod.Name, filterPattern) {
+					items = append(items, pod)
+				}
+			}
+		}
+	}
+	rand.Shuffle(len(items), func(i, j int) {
+		items[i], items[j] = items[j], items[i]
 	})
 
 	var result []container.Container
-	for _, c := range pods.Items {
+	for _, c := range items {
 		result = append(result, k8s.NewPod(c))
 	}
 	return result, nil
