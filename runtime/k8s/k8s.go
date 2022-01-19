@@ -3,16 +3,15 @@ package k8s
 import (
 	"context"
 	"errors"
-	"flag"
 	"github.com/scientificideas/storm/chaos"
 	"github.com/scientificideas/storm/container"
 	"github.com/scientificideas/storm/container/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"math/rand"
-	"path/filepath"
 )
 
 type K8S struct {
@@ -22,17 +21,11 @@ type K8S struct {
 	namespace string
 }
 
-func NewK8sClient(chaosType, filter, namespace string) (*K8S, error) {
-	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
-
-	// use the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+func NewK8sClient(chaosType, filter, namespace, kubeconfig, k8sContext string) (*K8S, error) {
+	// get config from kubeconfig
+	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig},
+		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: ""}, CurrentContext: k8sContext}).ClientConfig()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -42,6 +35,7 @@ func NewK8sClient(chaosType, filter, namespace string) (*K8S, error) {
 	if err != nil {
 		panic(err.Error())
 	}
+
 	return &K8S{cli: clientset, chaos: chaos.NewChaos(chaosType), filter: filter, namespace: namespace}, nil
 }
 
@@ -54,7 +48,7 @@ func (k *K8S) Chaos() chaos.Chaos {
 }
 
 func (k *K8S) GetContainers(ctx context.Context, all bool) ([]container.Container, error) {
-	pods, err := k.cli.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+	pods, err := k.cli.CoreV1().Pods(k.namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		panic(err.Error())
 	}
@@ -75,7 +69,7 @@ func (k *K8S) StopContainer(ctx context.Context, name string) error {
 }
 func (k *K8S) RmContainer(ctx context.Context, name string) error {
 	var stopTime int64 = 3
-	return k.cli.CoreV1().Pods("").Delete(context.TODO(), name, metav1.DeleteOptions{
+	return k.cli.CoreV1().Pods(k.namespace).Delete(context.TODO(), name, metav1.DeleteOptions{
 		GracePeriodSeconds: &stopTime,
 	})
 }
