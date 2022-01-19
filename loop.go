@@ -2,15 +2,21 @@ package main
 
 import (
 	"context"
+	"github.com/scientificideas/storm/chaos"
 	"github.com/scientificideas/storm/runtime"
-	"github.com/scientificideas/storm/runtime/docker"
 	"github.com/sirupsen/logrus"
 	"math/rand"
 	"strings"
 	"time"
 )
 
-func Loop(ctx context.Context, runtime runtime.Runtime, loop docker.loopType, stopped map[int]struct{}, targets string) {
+const (
+	stop = iota
+	start
+	stopAndStartImmediately
+)
+
+func Loop(ctx context.Context, runtime runtime.Runtime, loop chaos.LoopType, stopped map[int]struct{}, targets string) {
 	var (
 		msg              string
 		actionFn         func(ctx context.Context, name string) error
@@ -22,10 +28,10 @@ func Loop(ctx context.Context, runtime runtime.Runtime, loop docker.loopType, st
 	}
 
 	switch {
-	case loop == docker.stop || loop == docker.stopAndStartImmediately:
+	case loop == stop || loop == stopAndStartImmediately:
 		msg = "stop"
 		actionFn = runtime.StopContainer
-	case loop == docker.start:
+	case loop == start:
 		msg = "start"
 		actionFn = runtime.StartContainer
 	}
@@ -41,7 +47,7 @@ func Loop(ctx context.Context, runtime runtime.Runtime, loop docker.loopType, st
 		}
 
 		switch {
-		case loop == docker.stop || loop == docker.stopAndStartImmediately:
+		case loop == stop || loop == stopAndStartImmediately:
 			if len(containers) == 0 {
 				continue
 			}
@@ -50,7 +56,7 @@ func Loop(ctx context.Context, runtime runtime.Runtime, loop docker.loopType, st
 			} else {
 				targetIndex = rand.Intn(len(containers))
 			}
-		case loop == docker.start:
+		case loop == start:
 			containers, err = runtime.GetContainers(ctx, true)
 			if err != nil {
 				logrus.Fatal(err)
@@ -81,11 +87,11 @@ func Loop(ctx context.Context, runtime runtime.Runtime, loop docker.loopType, st
 			logrus.Error(err)
 		}
 		switch loop {
-		case docker.stop:
+		case stop:
 			stopped[targetIndex] = struct{}{}
-		case docker.start:
+		case start:
 			delete(stopped, targetIndex)
-		case docker.stopAndStartImmediately:
+		case stopAndStartImmediately:
 			logrus.Infof("start %s", selectedContainer)
 			if err = runtime.StartContainer(ctx, selectedContainer); err != nil {
 				logrus.Error(err)
