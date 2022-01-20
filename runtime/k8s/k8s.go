@@ -1,3 +1,8 @@
+/*
+Copyright Scientific Ideas 2022. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+*/
+
 package k8s
 
 import (

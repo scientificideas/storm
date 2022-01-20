@@ -1,3 +1,8 @@
+/*
+Copyright Scientific Ideas 2022. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+*/
+
 package runtime
 
 import (
@@ -6,7 +11,7 @@ import (
 	"github.com/scientificideas/storm/container"
 )
 
-// Runtime is a container runtime
+// Runtime is an interface for interaction with a container runtime
 type Runtime interface {
 	GetContainers(ctx context.Context, all bool) ([]container.Container, error)
 	StopContainer(ctx context.Context, name string) error
