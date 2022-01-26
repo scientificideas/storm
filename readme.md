@@ -48,3 +48,9 @@ storm -startfast true
 ```
 storm -runtime=k8s -kube-namespace=some-namespace -kube-context=my-context
 ```
+
+##### Kill k8s pods with pattern 'xyz' in pod's name
+
+```
+storm -filter=xyz -runtime=k8s -kube-namespace=some-namespace -kube-context=my-context
+```
