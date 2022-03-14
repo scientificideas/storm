@@ -2,7 +2,7 @@
 
 ##### Installation
 ```
-go install gitlab.n-t.io/atmz/storm@latest
+go install github.com/scientificideas/storm@latest
 ```
 
 <br />
@@ -43,7 +43,7 @@ storm -startfast true
 
 <br />
 
-##### Choose container runtime/orchestrator which need a storm
+##### Choose container runtime/orchestrator which need a storm (docker | k8s)
 
 ```
 storm -runtime=k8s -kube-namespace=some-namespace -kube-context=my-context
